@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulsePoint — MBA Intelligence</title>
+  <meta name="description"
+    content="PulsePoint is a curated MBA-focused news aggregator covering global finance, macro policy, strategy, startups, and the Indian economy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* ======================================================================
+   RESET & BASE
+   ====================================================================== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #f5f0e8;
+      --ink: #0a0a0f;
+      --red: #c8392b;
+      --gold: #c9a84c;
+      --cream: #ebe5d9;
+      --light-ink: #3a3a42;
+      --muted: #7a7a82;
+      --divider: #d4cec2;
+      --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      --font-heading: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+      --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px 256px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    /* ======================================================================
+   MASTHEAD
+   ====================================================================== */
+    .masthead {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--ink);
+      color: #fff;
+      padding: 0;
+      border-bottom: 3px solid var(--red);
+    }
+
+    .masthead-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 32px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .masthead-date {
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: #aaa;
+      min-width: 180px;
+    }
+
+    .masthead-brand {
+      text-align: center;
+      flex: 1;
+    }
+
+    .masthead-brand h1 {
+      font-family: var(--font-heading);
+      font-size: 48px;
+      letter-spacing: 8px;
+      line-height: 1;
+      margin: 0;
+      color: #fff;
+    }
+
+    .masthead-brand .tagline {
+      font-family: var(--font-body);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-top: 2px;
+    }
+
+    .masthead-actions {
+      min-width: 180px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .refresh-btn {
+      background: none;
+      border: 1px solid #444;
+      color: #ccc;
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+      border-color: var(--red);
+      color: #fff;
+    }
+
+    .refresh-btn .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid transparent;
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: none;
+    }
+
+    .refresh-btn.loading .spinner {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Category Nav */
+    .category-nav {
+      background: #111;
+      border-top: 1px solid #222;
+    }
+
+    .category-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      max-width: 1440px;
+      margin: 0 auto;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .category-nav-inner::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-tab {
+      background: none;
+      border: none;
+      color: #888;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 12px 22px;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+
+    .cat-tab:hover {
+      color: #ddd;
+    }
+
+    .cat-tab.active {
+      color: #fff;
+    }
+
+    .cat-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 22px;
+      right: 22px;
+      height: 2px;
+      background: var(--red);
+    }
+
+    /* ======================================================================
+   BREAKING TICKER
+   ====================================================================== */
+    .ticker-wrap {
+      background: var(--red);
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .ticker-label {
+      display: inline-block;
+      background: #8b1a10;
+      color: #fff;
+      font-family: var(--font-heading);
+      font-size: 13px;
+      letter-spacing: 2px;
+      padding: 10px 18px;
+      position: relative;
+      z-index: 2;
+      vertical-align: middle;
+    }
+
+    .ticker-track {
+      display: inline-block;
+      animation: ticker-scroll 60s linear infinite;
+      padding-left: 20px;
+      vertical-align: middle;
+    }
+
+    .ticker-wrap:hover .ticker-track {
+      animation-play-state: paused;
+    }
+
+    .ticker-item {
+      display: inline;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 0 32px;
+      cursor: pointer;
+    }
+
+    .ticker-item::after {
+      content: '◆';
+      margin-left: 32px;
+      opacity: 0.5;
+      font-size: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes ticker-scroll {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    /* ======================================================================
+   MARKET SNAPSHOT BAR
+   ====================================================================== */
+    .market-bar {
+      background: var(--cream);
+      border-bottom: 1px solid var(--divider);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .market-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .market-bar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 32px;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-width: max-content;
+    }
+
+    .market-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 4px 14px;
+      border-right: 1px solid var(--divider);
+      white-space: nowrap;
+    }
+
+    .market-item:last-child {
+      border-right: none;
+    }
+
+    .market-name {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    .market-value {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .market-change {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .market-change.up {
+      color: #1a8c42;
+    }
+
+    .market-change.down {
+      color: var(--red);
+    }
+
+    /* ======================================================================
+   CONTAINER
+   ====================================================================== */
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ======================================================================
+   LOADING STATE
+   ====================================================================== */
+    .loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 24px;
+    }
+
+    .loading-screen .pulse-ring {
+      width: 48px;
+      height: 48px;
+      border: 2px solid var(--divider);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-screen p {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 18px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* ======================================================================
+   SECTION LABELS
+   ====================================================================== */
+    .section-label {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 8px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label .red-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ======================================================================
+   HERO SECTION
+   ====================================================================== */
+    .hero-section {
+      padding-top: 48px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 40px;
+    }
+
+    .hero-article {
+      cursor: pointer;
+      margin-bottom: 36px;
+      transition: opacity 0.2s;
+    }
+
+    .hero-article:hover {
+      opacity: 0.85;
+    }
+
+    .hero-tag {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 12px;
+      display: inline-block;
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 2px;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--ink);
+      margin-bottom: 16px;
+      max-width: 900px;
+    }
+
+    .hero-summary {
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--light-ink);
+      max-width: 720px;
+      margin-bottom: 14px;
+    }
+
+    .hero-meta {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-meta .source-name {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .feature-card {
+      cursor: pointer;
+      border-top: 1px solid var(--divider);
+      transition: background 0.2s;
+      padding: 20px 16px;
+    }
+
+    .feature-card:hover {
+      background: rgba(200, 57, 43, 0.04);
+    }
+
+    .feature-tag {
+      font-family: var(--font-heading);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .feature-summary {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--light-ink);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .feature-meta {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .feature-meta .source-name {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* ======================================================================
+   MAIN ARTICLE GRID
+   ====================================================================== */
+    .main-section {
+      padding: 40px 0;
+    }
+
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+
+    .article-card {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--divider);
+      border-right: 1px solid var(--divider);
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    .article-card:nth-child(3n) {
+      border-right: none;
+    }
+
+    .article-card:hover {
+      background: rgba(200, 57, 43, 0.03);
+    }
+
+    .article-number {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 400;
+      color: var(--divider);
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .article-tag {
+      font-family: var(--font-heading);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 10px;
+      display: inline-block;
+      padding-right: 8px;
+      border-right: 2px solid var(--red);
+    }
+
+    .article-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 8px;
+      color: var(--ink);
+      padding-right: 50px;
+    }
+
+    .article-summary {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--light-ink);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .article-meta {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .article-meta .source-name {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* ======================================================================
+   INDIA FOCUS SECTION
+   ====================================================================== */
+    .india-section {
+      background: var(--ink);
+      padding: 56px 0;
+      margin: 40px 0;
+      position: relative;
+      display: none;
+    }
+
+    .india-section.india-solo {
+      margin-top: 0;
+      padding-top: 40px;
+    }
+
+    .india-section .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    .india-label {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .india-label .flag {
+      font-size: 20px;
+    }
+
+    .india-sublabel {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: #777;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #333;
+    }
+
+    .india-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .india-card {
+      border-left: 2px solid var(--gold);
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .india-card:hover {
+      background: rgba(201, 168, 76, 0.08);
+    }
+
+    .india-card-tag {
+      font-family: var(--font-heading);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .india-card-title {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: #eee;
+      margin-bottom: 10px;
+    }
+
+    .india-card-summary {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: #999;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .india-card-meta {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .india-card-meta .source-name {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    /* ======================================================================
+   SIDEBAR LAYOUT
+   ====================================================================== */
+    .sidebar-section {
+      padding: 40px 0 60px;
+    }
+
+    .sidebar-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 48px;
+    }
+
+    .sidebar-articles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .sidebar-article-card {
+      padding: 20px 16px;
+      border-bottom: 1px solid var(--divider);
+      border-right: 1px solid var(--divider);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .sidebar-article-card:nth-child(2n) {
+      border-right: none;
+    }
+
+    .sidebar-article-card:hover {
+      background: rgba(200, 57, 43, 0.03);
+    }
+
+    .sidebar-article-tag {
+      font-family: var(--font-heading);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+
+    .sidebar-article-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-article-meta {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .sidebar-article-meta .source-name {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* Top Headlines sidebar */
+    .top-headlines {
+      border-left: 2px solid var(--ink);
+      padding-left: 28px;
+    }
+
+    .top-headlines-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .top-headline-item {
+      display: flex;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--divider);
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .top-headline-item:hover {
+      opacity: 0.7;
+    }
+
+    .top-headline-num {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--divider);
+      line-height: 1;
+      min-width: 36px;
+    }
+
+    .top-headline-text {
+      flex: 1;
+    }
+
+    .top-headline-text h4 {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+
+    .top-headline-text .meta {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .top-headline-text .meta .source-name {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* ======================================================================
+   STORY MODAL
+   ====================================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 15, 0.7);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg);
+      max-width: 680px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 48px;
+      position: relative;
+      border: 1px solid var(--divider);
+      animation: modal-in 0.3s ease;
+    }
+
+    @keyframes modal-in {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: color 0.2s;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: var(--ink);
+    }
+
+    .modal-tag {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: inline-block;
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 2px;
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      color: var(--ink);
+    }
+
+    .modal-meta {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .modal-meta .source-name {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    .modal-summary {
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.75;
+      color: var(--light-ink);
+      margin-bottom: 32px;
+    }
+
+    .modal-link {
+      display: inline-block;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 2px;
+      transition: opacity 0.2s;
+    }
+
+    .modal-link:hover {
+      opacity: 0.7;
+    }
+
+    /* ======================================================================
+   FOOTER
+   ====================================================================== */
+    .footer {
+      background: var(--ink);
+      color: #666;
+      text-align: center;
+      padding: 32px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .footer span {
+      color: var(--red);
+    }
+
+    /* ======================================================================
+   RESPONSIVE
+   ====================================================================== */
+    @media (max-width: 1100px) {
+      .india-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .sidebar-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .articles-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .article-card:nth-child(3n) {
+        border-right: 1px solid var(--divider);
+      }
+
+      .article-card:nth-child(2n) {
+        border-right: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .masthead-top {
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .masthead-brand h1 {
+        font-size: 32px;
+        letter-spacing: 4px;
+      }
+
+      .masthead-date {
+        font-size: 10px;
+        min-width: auto;
+        order: 2;
+      }
+
+      .masthead-brand {
+        order: 1;
+        flex-basis: 100%;
+      }
+
+      .masthead-actions {
+        order: 3;
+        min-width: auto;
+      }
+
+      .cat-tab {
+        padding: 10px 14px;
+        font-size: 13px;
+      }
+
+      .container {
+        padding: 0 16px;
+      }
+
+      .hero-title {
+        font-size: 28px;
+      }
+
+      .hero-summary {
+        font-size: 15px;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .articles-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .article-card {
+        border-right: none !important;
+      }
+
+      .article-number {
+        display: none;
+      }
+
+      .india-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar-articles {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar-article-card {
+        border-right: none !important;
+      }
+
+      .sidebar-layout {
+        gap: 32px;
+      }
+
+      .market-bar-inner {
+        justify-content: flex-start;
+        padding: 10px 16px;
+      }
+
+      .modal-card {
+        padding: 28px 20px;
+      }
+
+      .modal-title {
+        font-size: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .masthead-brand h1 {
+        font-size: 26px;
+        letter-spacing: 3px;
+      }
+
+      .hero-title {
+        font-size: 24px;
+      }
+
+      .feature-title {
+        font-size: 18px;
+      }
+
+      .article-title {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== MASTHEAD ===== -->
+  <header class="masthead" id="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="live-clock"></div>
+      <div class="masthead-brand">
+        <h1>PULSEPOINT</h1>
+        <div class="tagline">MBA Intelligence</div>
+      </div>
+      <div class="masthead-actions">
+        <button class="refresh-btn" id="refresh-btn" aria-label="Refresh news">
+          <span class="spinner"></span>
+          Refresh
+        </button>
+      </div>
+    </div>
+    <nav class="category-nav">
+      <div class="category-nav-inner" id="category-tabs">
+        <button class="cat-tab active" data-filter="all">All</button>
+        <button class="cat-tab" data-filter="finance">Finance</button>
+        <button class="cat-tab" data-filter="macro">Macro &amp; Policy</button>
+        <button class="cat-tab" data-filter="business">Business</button>
+        <button class="cat-tab" data-filter="strategy">Strategy</button>
+        <button class="cat-tab" data-filter="startups">Startups</button>
+        <button class="cat-tab" data-filter="india">India</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ===== BREAKING TICKER ===== -->
+  <div class="ticker-wrap" id="ticker-wrap">
+    <span class="ticker-label">BREAKING</span>
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+
+  <!-- ===== MARKET SNAPSHOT BAR ===== -->
+  <div class="market-bar">
+    <div class="market-bar-inner" id="market-bar"></div>
+  </div>
+
+  <!-- ===== LOADING STATE ===== -->
+  <div class="loading-screen" id="loading-screen">
+    <div class="pulse-ring"></div>
+    <p>Curating today's intelligence&hellip;</p>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main id="main-content" style="display:none;">
+
+    <!-- Hero Section -->
+    <section class="hero-section container" id="hero-section"></section>
+
+    <!-- Main Grid -->
+    <section class="main-section container" id="main-section"></section>
+
+    <!-- India Focus (full-width dark) -->
+    <section class="india-section" id="india-section"></section>
+
+    <!-- Sidebar + More Stories -->
+    <section class="sidebar-section container" id="sidebar-section"></section>
+
+  </main>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-card" id="modal-card">
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <span>PulsePoint</span> &mdash; MBA Intelligence &mdash; Curated News Aggregator &copy; 2026
+  </footer>
+
+  <!-- ================================================================== -->
+  <!-- JAVASCRIPT -->
+  <!-- ================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ----- State -----
+      let allArticles = [];
+      let activeFilter = 'all';
+
+      // ----- DOM refs -----
+      var $clock = document.getElementById('live-clock');
+      var $refreshBtn = document.getElementById('refresh-btn');
+      var $tabs = document.getElementById('category-tabs');
+      var $ticker = document.getElementById('ticker-track');
+      var $tickerWrap = document.getElementById('ticker-wrap');
+      var $marketBar = document.getElementById('market-bar');
+      var $loading = document.getElementById('loading-screen');
+      var $main = document.getElementById('main-content');
+      var $hero = document.getElementById('hero-section');
+      var $mainSection = document.getElementById('main-section');
+      var $india = document.getElementById('india-section');
+      var $sidebar = document.getElementById('sidebar-section');
+      var $modalOverlay = document.getElementById('modal-overlay');
+      var $modalBody = document.getElementById('modal-body');
+      var $modalClose = document.getElementById('modal-close');
+
+      // ----- Live Clock (IST) -----
+      function updateClock() {
+        var now = new Date();
+        var ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000));
+        var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        var dateStr = ist.toLocaleDateString('en-IN', opts);
+        var timeStr = ist.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        $clock.textContent = dateStr + '  ·  ' + timeStr + ' IST';
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // ----- Time Ago -----
+      function timeAgo(dateStr) {
+        var diff = Date.now() - new Date(dateStr).getTime();
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'Just now';
+        if (mins < 60) return mins + 'm ago';
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h ago';
+        var days = Math.floor(hrs / 24);
+        return days + 'd ago';
+      }
+
+      // ----- Category Label -----
+      function categoryLabel(cat) {
+        var labels = {
+          finance: 'Finance',
+          macro: 'Macro & Policy',
+          business: 'Business',
+          strategy: 'Strategy',
+          startups: 'Startups',
+        };
+        return labels[cat] || cat;
+      }
+
+      // ----- Safe text node creation (no HTML injection, no quoting problems) -----
+      function setText(el, text) {
+        el.textContent = text || '';
+      }
+
+      // ----- Create a DOM element helper -----
+      function el(tag, className, textContent) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (textContent) node.textContent = textContent;
+        return node;
+      }
+
+      // ----- Market Snapshot -----
+      var MARKET_SYMBOLS = [
+        { symbol: '^BSESN', name: 'Sensex' },
+        { symbol: '^NSEI', name: 'Nifty 50' },
+        { symbol: '^GSPC', name: 'S&P 500' },
+        { symbol: '^IXIC', name: 'NASDAQ' },
+        { symbol: 'USDINR=X', name: 'USD/INR' },
+        { symbol: 'CL=F', name: 'Crude Oil' },
+        { symbol: 'GC=F', name: 'Gold' },
+        { symbol: '^TNX', name: '10Y UST' },
+      ];
+
+      async function fetchMarketData() {
+        // Render placeholder dashes first
+        $marketBar.innerHTML = '';
+        MARKET_SYMBOLS.forEach(function (s) {
+          var item = el('div', 'market-item');
+          item.appendChild(el('span', 'market-name', s.name));
+          item.appendChild(el('span', 'market-value', '—'));
+          item.appendChild(el('span', 'market-change', '—'));
+          $marketBar.appendChild(item);
+        });
+
+        // Fetch from our backend proxy (avoids CORS issues)
+        try {
+          var resp = await fetch('/api/market');
+          if (!resp.ok) return;
+          var data = await resp.json();
+
+          var items = $marketBar.querySelectorAll('.market-item');
+          MARKET_SYMBOLS.forEach(function (s, i) {
+            var info = data[s.symbol];
+            if (info && items[i]) {
+              items[i].querySelector('.market-value').textContent = info.price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+              var changeEl = items[i].querySelector('.market-change');
+              var isUp = parseFloat(info.change) >= 0;
+              changeEl.textContent = (isUp ? '+' : '') + info.change + '%';
+              changeEl.className = 'market-change ' + (isUp ? 'up' : 'down');
+            }
+          });
+        } catch (e) {
+          console.error('Market data fetch failed:', e);
+        }
+      }
+
+      // ----- Build article card (DOM, not innerHTML) -----
+      function buildCard(article, idx, type) {
+        // type: 'article' | 'feature' | 'india' | 'sidebar' | 'headline'
+        var card, tagEl, titleEl, summaryEl, metaEl;
+
+        if (type === 'india') {
+          card = el('div', 'india-card');
+          tagEl = el('div', 'india-card-tag', categoryLabel(article.category));
+          titleEl = el('h3', 'india-card-title', article.title);
+          summaryEl = el('p', 'india-card-summary', article.summary);
+          metaEl = el('div', 'india-card-meta');
+          var srcSpan = el('span', 'source-name', article.source);
+          metaEl.appendChild(srcSpan);
+          metaEl.appendChild(document.createTextNode(' · ' + timeAgo(article.publishedAt)));
+          card.appendChild(tagEl);
+          card.appendChild(titleEl);
+          card.appendChild(summaryEl);
+          card.appendChild(metaEl);
+        } else if (type === 'feature') {
+          card = el('div', 'feature-card');
+          tagEl = el('div', 'feature-tag', categoryLabel(article.category));
+          titleEl = el('h3', 'feature-title', article.title);
+          summaryEl = el('p', 'feature-summary', article.summary);
+          metaEl = el('div', 'feature-meta');
+          var srcSpan2 = el('span', 'source-name', article.source);
+          metaEl.appendChild(srcSpan2);
+          metaEl.appendChild(document.createTextNode(' · ' + timeAgo(article.publishedAt)));
+          card.appendChild(tagEl);
+          card.appendChild(titleEl);
+          card.appendChild(summaryEl);
+          card.appendChild(metaEl);
+        } else if (type === 'sidebar') {
+          card = el('div', 'sidebar-article-card');
+          tagEl = el('div', 'sidebar-article-tag', categoryLabel(article.category));
+          titleEl = el('h3', 'sidebar-article-title', article.title);
+          metaEl = el('div', 'sidebar-article-meta');
+          var srcSpan3 = el('span', 'source-name', article.source);
+          metaEl.appendChild(srcSpan3);
+          metaEl.appendChild(document.createTextNode(' · ' + timeAgo(article.publishedAt)));
+          card.appendChild(tagEl);
+          card.appendChild(titleEl);
+          card.appendChild(metaEl);
+        } else if (type === 'headline') {
+          card = el('div', 'top-headline-item');
+          var numEl = el('span', 'top-headline-num', String(idx + 1));
+          var textWrap = el('div', 'top-headline-text');
+          titleEl = el('h4', '', article.title);
+          metaEl = el('div', 'meta');
+          var srcSpan4 = el('span', 'source-name', article.source);
+          metaEl.appendChild(srcSpan4);
+          metaEl.appendChild(document.createTextNode(' · ' + timeAgo(article.publishedAt)));
+          textWrap.appendChild(titleEl);
+          textWrap.appendChild(metaEl);
+          card.appendChild(numEl);
+          card.appendChild(textWrap);
+        } else {
+          // default 'article'
+          card = el('div', 'article-card');
+          var numBg = el('span', 'article-number', String(idx + 1).padStart(2, '0'));
+          tagEl = el('div', 'article-tag', categoryLabel(article.category));
+          titleEl = el('h3', 'article-title', article.title);
+          summaryEl = el('p', 'article-summary', article.summary);
+          metaEl = el('div', 'article-meta');
+          var srcSpan5 = el('span', 'source-name', article.source);
+          metaEl.appendChild(srcSpan5);
+          metaEl.appendChild(document.createTextNode(' · ' + timeAgo(article.publishedAt)));
+          card.appendChild(numBg);
+          card.appendChild(tagEl);
+          card.appendChild(titleEl);
+          card.appendChild(summaryEl);
+          card.appendChild(metaEl);
+        }
+
+        // Store article index for click handler
+        card.dataset.articleIdx = String(idx);
+        card.addEventListener('click', function () {
+          openModal(allArticles[parseInt(this.dataset.articleIdx)]);
+        });
+
+        return card;
+      }
+
+      // ----- Fetch News -----
+      async function fetchNews() {
+        $refreshBtn.classList.add('loading');
+        try {
+          var resp = await fetch('/api/news');
+          if (!resp.ok) throw new Error('API error');
+          allArticles = await resp.json();
+        } catch (e) {
+          console.error('Failed to fetch news:', e);
+        }
+        $refreshBtn.classList.remove('loading');
+        renderAll();
+      }
+
+      // ----- Render All -----
+      // Store original main HTML structure for restoration
+      var mainOriginalHTML = $main.innerHTML;
+
+      function renderAll() {
+        $loading.style.display = 'none';
+        $main.style.display = 'block';
+
+        var filtered = filterArticles();
+        if (filtered.length === 0) {
+          restoreSections();
+          $hero.innerHTML = '';
+          var msg = el('div', '', '');
+          msg.style.cssText = 'padding:60px 0;text-align:center;';
+          var p = el('p', '', 'No articles found for this filter.');
+          p.style.cssText = 'font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--muted);';
+          msg.appendChild(p);
+          $hero.appendChild(msg);
+          $mainSection.innerHTML = '';
+          $india.style.display = 'none';
+          $india.innerHTML = '';
+          $sidebar.innerHTML = '';
+          return;
+        }
+
+        if (activeFilter === 'india') {
+          renderIndiaOnly(filtered);
+        } else {
+          restoreSections();
+          renderStandard(filtered);
+        }
+        renderTicker();
+      }
+
+      // Restore the original section elements inside $main if they were removed
+      function restoreSections() {
+        if (!document.getElementById('hero-section')) {
+          $main.innerHTML = mainOriginalHTML;
+          // Re-bind DOM refs
+          $hero = document.getElementById('hero-section');
+          $mainSection = document.getElementById('main-section');
+          $india = document.getElementById('india-section');
+          $sidebar = document.getElementById('sidebar-section');
+        }
+      }
+
+      function filterArticles() {
+        if (activeFilter === 'all') return allArticles.slice();
+        if (activeFilter === 'india') return allArticles.filter(function (a) { return a.region === 'india'; });
+        return allArticles.filter(function (a) { return a.category === activeFilter; });
+      }
+
+      // ----- Find global index of an article -----
+      function globalIdx(article) {
+        for (var i = 0; i < allArticles.length; i++) {
+          if (allArticles[i] === article) return i;
+        }
+        return -1;
+      }
+
+      // ----- Standard Layout -----
+      function renderStandard(articles) {
+        var hero = articles[0];
+        var features = articles.slice(1, 5);
+        var globalMain = articles.slice(5).filter(function (a) { return a.region !== 'india'; });
+        var indiaArticles = allArticles.filter(function (a) { return a.region === 'india'; });
+        var remaining = globalMain.slice(0, 18);
+        var sidebarArts = globalMain.slice(18, 30);
+        var topHeadlines = articles.slice(0, 10);
+
+        // ── Hero section ──
+        $hero.innerHTML = '';
+        var heroDiv = el('div', 'hero-article');
+        heroDiv.appendChild(el('div', 'hero-tag', categoryLabel(hero.category)));
+        heroDiv.appendChild(el('h2', 'hero-title', hero.title));
+        heroDiv.appendChild(el('p', 'hero-summary', hero.summary));
+        var heroMeta = el('div', 'hero-meta');
+        heroMeta.appendChild(el('span', 'source-name', hero.source));
+        heroMeta.appendChild(document.createTextNode(' · ' + timeAgo(hero.publishedAt)));
+        heroDiv.appendChild(heroMeta);
+        heroDiv.dataset.articleIdx = String(globalIdx(hero));
+        heroDiv.addEventListener('click', function () {
+          openModal(allArticles[parseInt(this.dataset.articleIdx)]);
+        });
+        $hero.appendChild(heroDiv);
+
+        // Feature grid
+        var featureGrid = el('div', 'feature-grid');
+        features.forEach(function (a) {
+          featureGrid.appendChild(buildCard(a, globalIdx(a), 'feature'));
+        });
+        $hero.appendChild(featureGrid);
+
+        // ── Main grid ──
+        $mainSection.innerHTML = '';
+        if (remaining.length > 0) {
+          var label = el('div', 'section-label');
+          label.appendChild(el('span', 'red-dot'));
+          label.appendChild(document.createTextNode('Latest Intelligence'));
+          $mainSection.appendChild(label);
+
+          var grid = el('div', 'articles-grid');
+          remaining.forEach(function (a, i) {
+            grid.appendChild(buildCard(a, globalIdx(a), 'article'));
+          });
+          $mainSection.appendChild(grid);
+        }
+
+        // ── India section ──
+        if (activeFilter === 'all' && indiaArticles.length > 0) {
+          $india.style.display = 'block';
+          $india.innerHTML = '';
+          var indiaContainer = el('div', 'container');
+          var indiaLabelDiv = el('div', 'india-label');
+          indiaLabelDiv.appendChild(el('span', 'flag', '🇮🇳'));
+          indiaLabelDiv.appendChild(document.createTextNode(' India Focus'));
+          indiaContainer.appendChild(indiaLabelDiv);
+          indiaContainer.appendChild(el('div', 'india-sublabel', 'Business · Markets · Policy · Startups — Indian Economy & Enterprises'));
+          var indiaGrid = el('div', 'india-grid');
+          indiaArticles.slice(0, 8).forEach(function (a) {
+            indiaGrid.appendChild(buildCard(a, globalIdx(a), 'india'));
+          });
+          indiaContainer.appendChild(indiaGrid);
+          $india.appendChild(indiaContainer);
+        } else {
+          $india.style.display = 'none';
+          $india.innerHTML = '';
+        }
+
+        // ── Sidebar ──
+        $sidebar.innerHTML = '';
+        if (sidebarArts.length > 0 || topHeadlines.length > 0) {
+          var sidebarLayout = el('div', 'sidebar-layout');
+
+          // Left: more stories
+          var leftCol = el('div', '');
+          var moreLabel = el('div', 'section-label');
+          moreLabel.appendChild(el('span', 'red-dot'));
+          moreLabel.appendChild(document.createTextNode('More Stories'));
+          leftCol.appendChild(moreLabel);
+
+          var sidebarGrid = el('div', 'sidebar-articles');
+          sidebarArts.forEach(function (a) {
+            sidebarGrid.appendChild(buildCard(a, globalIdx(a), 'sidebar'));
+          });
+          leftCol.appendChild(sidebarGrid);
+          sidebarLayout.appendChild(leftCol);
+
+          // Right: top headlines
+          var rightCol = el('div', 'top-headlines');
+          rightCol.appendChild(el('div', 'top-headlines-title', 'Top Headlines'));
+          topHeadlines.forEach(function (a, i) {
+            rightCol.appendChild(buildCard(a, globalIdx(a), 'headline'));
+          });
+          sidebarLayout.appendChild(rightCol);
+
+          $sidebar.appendChild(sidebarLayout);
+        }
+      }
+
+      // ----- India-Only Layout (replaces entire main content) -----
+      function renderIndiaOnly(articles) {
+        // Completely replace the main content — no hidden sections, no gaps
+        $main.innerHTML = '';
+
+        // Create a full-width dark India section directly
+        var section = document.createElement('section');
+        section.style.cssText = 'background:#0a0a0f;padding:40px 0;margin:0;min-height:60vh;';
+
+        var container = el('div', 'container');
+        var labelDiv = el('div', 'india-label');
+        labelDiv.appendChild(el('span', 'flag', '🇮🇳'));
+        labelDiv.appendChild(document.createTextNode(' India Focus'));
+        container.appendChild(labelDiv);
+        container.appendChild(el('div', 'india-sublabel', 'Business · Markets · Policy · Startups — Indian Economy & Enterprises'));
+
+        var grid = el('div', 'india-grid');
+        articles.forEach(function (a) {
+          grid.appendChild(buildCard(a, globalIdx(a), 'india'));
+        });
+        container.appendChild(grid);
+        section.appendChild(container);
+        $main.appendChild(section);
+      }
+
+      // ----- Ticker -----
+      function renderTicker() {
+        var top10 = allArticles.slice(0, 10);
+        if (top10.length === 0) {
+          $tickerWrap.style.display = 'none';
+          return;
+        }
+        $tickerWrap.style.display = 'block';
+        $ticker.innerHTML = '';
+
+        // Build items twice (for seamless loop)
+        for (var round = 0; round < 2; round++) {
+          top10.forEach(function (a) {
+            var span = el('span', 'ticker-item', a.title);
+            var idx = globalIdx(a);
+            span.dataset.articleIdx = String(idx);
+            span.addEventListener('click', function () {
+              openModal(allArticles[parseInt(this.dataset.articleIdx)]);
+            });
+            $ticker.appendChild(span);
+          });
+        }
+      }
+
+      // ----- Modal -----
+      function openModal(article) {
+        if (!article) return;
+        $modalBody.innerHTML = '';
+
+        var tag = el('div', 'modal-tag', categoryLabel(article.category) + (article.region === 'india' ? ' · 🇮🇳 India' : ''));
+        var title = el('h2', 'modal-title', article.title);
+        var meta = el('div', 'modal-meta');
+        meta.appendChild(el('span', 'source-name', article.source));
+        meta.appendChild(document.createTextNode(' · ' + timeAgo(article.publishedAt) + ' · ' + new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })));
+        var summary = el('p', 'modal-summary', article.summary);
+        var link = el('a', 'modal-link', 'Read Full Story →');
+        link.href = article.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+
+        $modalBody.appendChild(tag);
+        $modalBody.appendChild(title);
+        $modalBody.appendChild(meta);
+        $modalBody.appendChild(summary);
+        $modalBody.appendChild(link);
+
+        $modalOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeModal() {
+        $modalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+
+      $modalClose.addEventListener('click', closeModal);
+      $modalOverlay.addEventListener('click', function (e) {
+        if (e.target === $modalOverlay) closeModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+      });
+
+      // ----- Category Tabs -----
+      $tabs.addEventListener('click', function (e) {
+        var tab = e.target.closest('.cat-tab');
+        if (!tab) return;
+        document.querySelectorAll('.cat-tab').forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        activeFilter = tab.dataset.filter;
+        renderAll();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      // ----- Refresh Button -----
+      $refreshBtn.addEventListener('click', function () {
+        fetchNews();
+      });
+
+      // ----- Init -----
+      fetchNews();
+      fetchMarketData();
+
+      // Auto-refresh every 30 minutes
+      setInterval(fetchNews, 30 * 60 * 1000);
+      setInterval(fetchMarketData, 5 * 60 * 1000);
+
+    })();
+  </script>
+</body>
+
+</html>
