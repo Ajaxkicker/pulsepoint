@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const Parser = require('rss-parser');
 const path = require('path');
+const webPush = require('web-push');
 
 const app = express();
 const parser = new Parser({
@@ -13,14 +14,43 @@ const parser = new Parser({
 });
 
 app.use(cors());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
-// RSS Feed Configuration — Verified Working Feeds (Feb 2026)
+// Web Push (VAPID) Configuration
+// ---------------------------------------------------------------------------
+// Use env vars on deployed server; fall back to auto-generated keys for local dev.
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || '';
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
+
+let vapidPublicKey = '';
+
+if (VAPID_PUBLIC && VAPID_PRIVATE) {
+  webPush.setVapidDetails('mailto:pulsepoint@example.com', VAPID_PUBLIC, VAPID_PRIVATE);
+  vapidPublicKey = VAPID_PUBLIC;
+  console.log('  🔑 VAPID keys loaded from environment');
+} else {
+  // Auto-generate for local development (subscriptions won't persist across restarts)
+  const generatedKeys = webPush.generateVAPIDKeys();
+  webPush.setVapidDetails('mailto:pulsepoint@example.com', generatedKeys.publicKey, generatedKeys.privateKey);
+  vapidPublicKey = generatedKeys.publicKey;
+  console.log('  🔑 VAPID keys auto-generated (dev mode)');
+  console.log('  📋 Public Key:', generatedKeys.publicKey);
+  console.log('  📋 Private Key:', generatedKeys.privateKey);
+  console.log('  ℹ️  Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for production.\n');
+}
+
+// In-memory push subscription store
+const pushSubscriptions = new Map();
+
+// ---------------------------------------------------------------------------
+// RSS Feed Configuration — Targeted, Section-Specific Feeds (Feb 2026)
 // ---------------------------------------------------------------------------
 const FEEDS = [
   // ── Global Finance & Markets ──
   { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664', category: 'finance', region: 'global', source: 'CNBC' },
+  { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069', category: 'finance', region: 'global', source: 'CNBC Investing' },
   { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', category: 'finance', region: 'global', source: 'MarketWatch' },
   { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', category: 'finance', region: 'global', source: 'BBC Business' },
   { url: 'https://fortune.com/feed/', category: 'business', region: 'global', source: 'Fortune' },
@@ -32,22 +62,25 @@ const FEEDS = [
 
   // ── Global Business & Strategy ──
   { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147', category: 'business', region: 'global', source: 'CNBC Business' },
-  { url: 'https://feeds.bbci.co.uk/news/technology/rss.xml', category: 'business', region: 'global', source: 'BBC Tech' },
   { url: 'https://www.entrepreneur.com/latest.rss', category: 'strategy', region: 'global', source: 'Entrepreneur' },
+  { url: 'http://feeds.harvardbusiness.org/harvardbusiness?format=xml', category: 'strategy', region: 'global', source: 'HBR' },
 
   // ── Global Startups & VC ──
   { url: 'https://techcrunch.com/feed/', category: 'startups', region: 'global', source: 'TechCrunch' },
   { url: 'https://techcrunch.com/category/startups/feed/', category: 'startups', region: 'global', source: 'TechCrunch Startups' },
 
   // ── India Business & Economy ──
-  { url: 'https://economictimes.indiatimes.com/rssfeedstopstories.cms', category: 'business', region: 'india', source: 'Economic Times' },
-  { url: 'https://economictimes.indiatimes.com/rssfeeds/13358378.cms', category: 'business', region: 'india', source: 'ET Markets' },
-  { url: 'https://www.livemint.com/rss/news', category: 'finance', region: 'india', source: 'Livemint' },
+  { url: 'https://economictimes.indiatimes.com/rssfeeds/1977021.cms', category: 'finance', region: 'india', source: 'ET Markets' },
+  { url: 'https://economictimes.indiatimes.com/rssfeeds/13358378.cms', category: 'business', region: 'india', source: 'ET Industry' },
+  { url: 'https://economictimes.indiatimes.com/rssfeeds/13352306.cms', category: 'business', region: 'india', source: 'ET Companies' },
+  { url: 'https://www.livemint.com/rss/companies', category: 'business', region: 'india', source: 'Livemint Companies' },
   { url: 'https://www.livemint.com/rss/markets', category: 'finance', region: 'india', source: 'Livemint Markets' },
+  { url: 'https://www.livemint.com/rss/industry', category: 'business', region: 'india', source: 'Livemint Industry' },
 
   // ── India Markets ──
-  { url: 'https://www.moneycontrol.com/rss/latestnews.xml', category: 'finance', region: 'india', source: 'Moneycontrol' },
-  { url: 'https://www.business-standard.com/rss/markets-106.rss', category: 'finance', region: 'india', source: 'Business Standard' },
+  { url: 'https://www.moneycontrol.com/rss/business.xml', category: 'business', region: 'india', source: 'Moneycontrol' },
+  { url: 'https://www.business-standard.com/rss/markets-106.rss', category: 'finance', region: 'india', source: 'Business Standard Mkt' },
+  { url: 'https://www.business-standard.com/rss/companies-101.rss', category: 'business', region: 'india', source: 'Business Standard Co' },
 
   // ── India Policy & Economy ──
   { url: 'https://www.business-standard.com/rss/economy-policy-102.rss', category: 'macro', region: 'india', source: 'Business Standard' },
@@ -123,6 +156,72 @@ function stripHtml(html) {
 }
 
 // ---------------------------------------------------------------------------
+// MBA Relevance Filter — keyword whitelist
+// ---------------------------------------------------------------------------
+const MBA_KEYWORDS = [
+  // Finance & Markets
+  'market', 'stock', 'equity', 'bond', 'ipo', 'fund', 'investor', 'portfolio',
+  'dividend', 'earnings', 'forex', 'treasury', 'sensex', 'nifty', 'nasdaq',
+  'dow jones', 'wall street', 'share price', 'bull', 'bear', 'rally', 'crash',
+  'mutual fund', 'etf', 'derivative', 'commodity', 'futures',
+  // Economics & Policy
+  'economy', 'gdp', 'inflation', 'deflation', 'recession', 'fiscal', 'monetary',
+  'interest rate', 'central bank', 'rbi', 'federal reserve', 'tariff', 'trade',
+  'export', 'import', 'currency', 'rupee', 'dollar', 'budget', 'tax', 'subsidy',
+  'policy', 'regulation', 'sanction', 'debt', 'surplus', 'deficit',
+  // Business & Strategy
+  'business', 'corporate', 'enterprise', 'ceo', 'cfo', 'coo', 'board',
+  'merger', 'acquisition', 'revenue', 'profit', 'loss', 'growth', 'disruption',
+  'innovation', 'supply chain', 'logistics', 'retail', 'ecommerce',
+  'manufacturing', 'industry', 'sector', 'quarterly', 'annual report',
+  'market share', 'brand', 'franchise', 'privatization', 'disinvestment',
+  // Startups & VC
+  'startup', 'venture', 'funding', 'valuation', 'unicorn', 'series a', 'series b',
+  'series c', 'accelerator', 'incubator', 'angel investor', 'seed round',
+  'fintech', 'saas', 'b2b', 'b2c', 'pivot', 'scale-up', 'bootstrap',
+  // Industry-specific
+  'banking', 'insurance', 'pharma', 'healthcare', 'energy', 'oil', 'crude',
+  'gold', 'real estate', 'infrastructure', 'telecom', 'aviation', 'automobile',
+  'ev ', 'electric vehicle', 'semiconductor', 'ai ', 'artificial intelligence',
+  'cloud', 'cybersecurity', 'blockchain', 'crypto',
+  // Management & Leadership
+  'leadership', 'management', 'strategy', 'governance', 'esg', 'sustainability',
+  'workforce', 'layoff', 'hiring', 'compensation', 'restructuring',
+  'digital transformation', 'ipo', 'listing', 'delisting',
+];
+
+function isRelevant(article) {
+  const text = (article.title + ' ' + article.summary).toLowerCase();
+  return MBA_KEYWORDS.some((kw) => text.includes(kw));
+}
+
+// ---------------------------------------------------------------------------
+// Negative Blocklist — reject clearly irrelevant content
+// ---------------------------------------------------------------------------
+const BLOCKLIST = [
+  // Sports
+  'cricket', ' ipl ', 'world cup', 'champions league', 'premier league',
+  'fifa', 'tennis', 'golf tournament', 'formula 1', 'olympics', 'wrestling',
+  'kabaddi', 'badminton', 'hockey score', 'football score', 'match result',
+  'batting', 'bowling', 'wicket',
+  // Entertainment
+  'bollywood', 'hollywood', 'movie review', 'box office', 'celebrity gossip',
+  'reality show', 'tv show', 'red carpet', 'award show', 'grammy', 'oscar',
+  'bigg boss', 'trailer release', 'song launch',
+  // Lifestyle
+  'horoscope', 'astrology', 'zodiac', 'recipe', 'cooking tips',
+  'fashion week', 'beauty tips', 'travel destination', 'vacation',
+  'wedding', 'matrimony',
+  // Crime / Tabloid
+  'murder accused', 'kidnap', 'missing person', 'road rage', 'domestic violence',
+];
+
+function isNotBlocked(article) {
+  const text = (article.title + ' ' + article.summary).toLowerCase();
+  return !BLOCKLIST.some((term) => text.includes(term));
+}
+
+// ---------------------------------------------------------------------------
 // Fetch All Feeds
 // ---------------------------------------------------------------------------
 async function fetchAllFeeds() {
@@ -164,6 +263,12 @@ async function fetchAllFeeds() {
   // Filter out articles without a title
   articles = articles.filter((a) => a.title && a.title.length > 5);
 
+  // Relevance filtering — remove irrelevant & blocked content
+  const beforeFilter = articles.length;
+  articles = articles.filter(isNotBlocked);
+  articles = articles.filter(isRelevant);
+  console.log(`  🔍 Relevance filter: ${beforeFilter} → ${articles.length} articles (${beforeFilter - articles.length} removed)`);
+
   // Deduplicate
   articles = deduplicateArticles(articles);
 
@@ -188,6 +293,21 @@ async function refreshCache() {
     // CRITICAL: Only update cache if we got articles.
     // Never overwrite a good cache with an empty one due to transient network failures.
     if (freshArticles.length > 0) {
+      // --- Breaking news detection: find new articles not in old cache ---
+      if (cachedArticles.length > 0 && pushSubscriptions.size > 0) {
+        const oldTitles = new Set(cachedArticles.map(a => a.title.toLowerCase()));
+        const newArticles = freshArticles.filter(a => !oldTitles.has(a.title.toLowerCase()));
+        if (newArticles.length > 0) {
+          const top = newArticles[0]; // Most recent new article
+          sendPushToAll({
+            title: '📰 ' + top.source,
+            body: top.title,
+            url: top.url || '/',
+          });
+          console.log(`  🔔 Push notification sent: "${top.title.substring(0, 60)}..."`);
+        }
+      }
+
       cachedArticles = freshArticles;
       lastFetchTime = Date.now();
       console.log(`  ✅ Cache updated: ${cachedArticles.length} articles\n`);
@@ -207,7 +327,57 @@ async function refreshCache() {
 }
 
 // ---------------------------------------------------------------------------
-// API Route
+// Send push notification to all subscribers
+// ---------------------------------------------------------------------------
+async function sendPushToAll(payload) {
+  const payloadStr = JSON.stringify(payload);
+  const deadEndpoints = [];
+
+  for (const [endpoint, sub] of pushSubscriptions) {
+    try {
+      await webPush.sendNotification(sub, payloadStr);
+    } catch (err) {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        // Subscription expired or unsubscribed
+        deadEndpoints.push(endpoint);
+      } else {
+        console.warn(`  ⚠ Push failed for ${endpoint.substring(0, 50)}...:`, err.message);
+      }
+    }
+  }
+
+  // Clean up dead subscriptions
+  deadEndpoints.forEach(ep => pushSubscriptions.delete(ep));
+}
+
+// ---------------------------------------------------------------------------
+// Push Notification API Routes
+// ---------------------------------------------------------------------------
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ publicKey: vapidPublicKey });
+});
+
+app.post('/api/push/subscribe', (req, res) => {
+  const sub = req.body;
+  if (!sub || !sub.endpoint) {
+    return res.status(400).json({ error: 'Invalid subscription' });
+  }
+  pushSubscriptions.set(sub.endpoint, sub);
+  console.log(`  🔔 Push subscription added (${pushSubscriptions.size} total)`);
+  res.json({ success: true });
+});
+
+app.post('/api/push/unsubscribe', (req, res) => {
+  const { endpoint } = req.body || {};
+  if (endpoint) {
+    pushSubscriptions.delete(endpoint);
+    console.log(`  🔕 Push subscription removed (${pushSubscriptions.size} total)`);
+  }
+  res.json({ success: true });
+});
+
+// ---------------------------------------------------------------------------
+// News API Route
 // ---------------------------------------------------------------------------
 app.get('/api/news', async (req, res) => {
   // Refresh cache if stale

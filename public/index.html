@@ -13,6 +13,13 @@
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&display=swap"
     rel="stylesheet">
 
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+
   <style>
     /* ======================================================================
    RESET & BASE
@@ -133,6 +140,59 @@
       min-width: 180px;
       display: flex;
       justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Notification Bell */
+    .notif-btn {
+      background: none;
+      border: 1px solid #444;
+      color: #ccc;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 0;
+    }
+
+    .notif-btn:hover {
+      border-color: var(--red);
+      color: #fff;
+    }
+
+    .notif-btn.subscribed {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .notif-btn.blocked {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .notif-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .notif-btn .notif-dot {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 7px;
+      height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      display: none;
+    }
+
+    .notif-btn.subscribed .notif-dot {
+      display: block;
     }
 
     .refresh-btn {
@@ -641,16 +701,9 @@
    INDIA FOCUS SECTION
    ====================================================================== */
     .india-section {
-      background: var(--ink);
-      padding: 56px 0;
-      margin: 40px 0;
+      padding: 40px 0;
       position: relative;
       display: none;
-    }
-
-    .india-section.india-solo {
-      margin-top: 0;
-      padding-top: 40px;
     }
 
     .india-section .container {
@@ -1159,6 +1212,14 @@
         <div class="tagline">MBA Intelligence</div>
       </div>
       <div class="masthead-actions">
+        <button class="notif-btn" id="notif-btn" aria-label="Toggle notifications"
+          title="Enable breaking news notifications">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+          </svg>
+          <span class="notif-dot"></span>
+        </button>
         <button class="refresh-btn" id="refresh-btn" aria-label="Refresh news">
           <span class="spinner"></span>
           Refresh
@@ -1468,12 +1529,8 @@
           return;
         }
 
-        if (activeFilter === 'india') {
-          renderIndiaOnly(filtered);
-        } else {
-          restoreSections();
-          renderStandard(filtered);
-        }
+        restoreSections();
+        renderStandard(filtered);
         renderTicker();
       }
 
@@ -1507,7 +1564,7 @@
       function renderStandard(articles) {
         var hero = articles[0];
         var features = articles.slice(1, 5);
-        var globalMain = articles.slice(5).filter(function (a) { return a.region !== 'india'; });
+        var globalMain = activeFilter === 'india' ? articles.slice(5) : articles.slice(5).filter(function (a) { return a.region !== 'india'; });
         var indiaArticles = allArticles.filter(function (a) { return a.region === 'india'; });
         var remaining = globalMain.slice(0, 18);
         var sidebarArts = globalMain.slice(18, 30);
@@ -1551,19 +1608,18 @@
           $mainSection.appendChild(grid);
         }
 
-        // ── India section ──
+        // ── India section (shown on "All" tab only) ──
         if (activeFilter === 'all' && indiaArticles.length > 0) {
           $india.style.display = 'block';
           $india.innerHTML = '';
           var indiaContainer = el('div', 'container');
-          var indiaLabelDiv = el('div', 'india-label');
-          indiaLabelDiv.appendChild(el('span', 'flag', '🇮🇳'));
-          indiaLabelDiv.appendChild(document.createTextNode(' India Focus'));
+          var indiaLabelDiv = el('div', 'section-label');
+          indiaLabelDiv.appendChild(el('span', 'red-dot'));
+          indiaLabelDiv.appendChild(document.createTextNode('🇮🇳 India Focus'));
           indiaContainer.appendChild(indiaLabelDiv);
-          indiaContainer.appendChild(el('div', 'india-sublabel', 'Business · Markets · Policy · Startups — Indian Economy & Enterprises'));
-          var indiaGrid = el('div', 'india-grid');
-          indiaArticles.slice(0, 8).forEach(function (a) {
-            indiaGrid.appendChild(buildCard(a, globalIdx(a), 'india'));
+          var indiaGrid = el('div', 'articles-grid');
+          indiaArticles.slice(0, 12).forEach(function (a, i) {
+            indiaGrid.appendChild(buildCard(a, globalIdx(a), 'article'));
           });
           indiaContainer.appendChild(indiaGrid);
           $india.appendChild(indiaContainer);
@@ -1714,6 +1770,102 @@
       // Auto-refresh every 30 minutes
       setInterval(fetchNews, 30 * 60 * 1000);
       setInterval(fetchMarketData, 5 * 60 * 1000);
+
+      // =====================================================================
+      // SERVICE WORKER + PUSH NOTIFICATIONS
+      // =====================================================================
+      var $notifBtn = document.getElementById('notif-btn');
+
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(function (reg) {
+          console.log('[PWA] Service Worker registered, scope:', reg.scope);
+
+          // Check existing push subscription
+          reg.pushManager.getSubscription().then(function (sub) {
+            if (sub) {
+              $notifBtn.classList.add('subscribed');
+              $notifBtn.title = 'Notifications enabled — click to disable';
+            }
+          });
+        }).catch(function (err) {
+          console.warn('[PWA] SW registration failed:', err);
+        });
+      }
+
+      // Notification bell click handler
+      $notifBtn.addEventListener('click', function () {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+          alert('Push notifications are not supported in this browser.');
+          return;
+        }
+
+        navigator.serviceWorker.ready.then(function (reg) {
+          reg.pushManager.getSubscription().then(function (sub) {
+            if (sub) {
+              // Already subscribed — unsubscribe
+              sub.unsubscribe().then(function () {
+                // Tell server to remove subscription
+                fetch('/api/push/unsubscribe', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ endpoint: sub.endpoint }),
+                });
+                $notifBtn.classList.remove('subscribed');
+                $notifBtn.title = 'Enable breaking news notifications';
+              });
+            } else {
+              // Subscribe
+              Notification.requestPermission().then(function (perm) {
+                if (perm === 'denied') {
+                  $notifBtn.classList.add('blocked');
+                  $notifBtn.title = 'Notifications blocked — enable in browser settings';
+                  return;
+                }
+                if (perm !== 'granted') return;
+
+                // Get VAPID public key from server
+                fetch('/api/push/vapid-public-key')
+                  .then(function (r) { return r.json(); })
+                  .then(function (data) {
+                    var key = urlBase64ToUint8Array(data.publicKey);
+                    return reg.pushManager.subscribe({
+                      userVisibleOnly: true,
+                      applicationServerKey: key,
+                    });
+                  })
+                  .then(function (newSub) {
+                    // Send subscription to server
+                    return fetch('/api/push/subscribe', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(newSub.toJSON()),
+                    });
+                  })
+                  .then(function () {
+                    $notifBtn.classList.add('subscribed');
+                    $notifBtn.title = 'Notifications enabled — click to disable';
+                  })
+                  .catch(function (err) {
+                    console.error('[Push] Subscription failed:', err);
+                  });
+              });
+            }
+          });
+        });
+      });
+
+      // Helper: Convert VAPID base64 URL key to Uint8Array
+      function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        var raw = window.atob(base64);
+        var arr = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) {
+          arr[i] = raw.charCodeAt(i);
+        }
+        return arr;
+      }
 
     })();
   </script>
